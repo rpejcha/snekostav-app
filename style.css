@@ -1,0 +1,28 @@
+body { 
+    background-color: #f3f4f6; 
+    -webkit-tap-highlight-color: transparent; 
+}
+
+.app-container { 
+    max-width: 480px; 
+    margin: 0 auto; 
+    min-height: 100vh; 
+    background-color: white; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.btn-active:active { 
+    transform: scale(0.95); 
+    transition: transform 0.1s; 
+}
+
+/* Proužek pro indikaci DEBUG režimu */
+.debug-strip { 
+    background: repeating-linear-gradient(45deg, #fcd34d, #fcd34d 10px, #fbbf24 10px, #fbbf24 20px); 
+    color: black; 
+    text-align: center; 
+    font-size: 10px; 
+    font-weight: bold; 
+    padding: 2px; 
+}
