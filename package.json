@@ -1,0 +1,10 @@
+{
+    "name": "snekostav-app",
+    "version": "1.0.0",
+    "scripts": {
+      "start": "live-server --port=3000 --entry-file=index.html"
+    },
+    "dependencies": {
+      "live-server": "^1.2.2"
+    }
+  }
