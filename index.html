@@ -42,21 +42,25 @@
                     <span class="flex-shrink-0 mx-4 text-gray-300 text-xs uppercase font-bold">Debug</span>
                     <div class="flex-grow border-t border-gray-200"></div>
                 </div>
-                <button onclick="debugLogin()" class="w-full bg-blue-50 text-blue-700 font-bold py-3 rounded-xl text-sm border border-blue-100 hover:bg-blue-100">
-                    👷 Test: Dělník Franta
+                <button onclick="debugLogin('Partak')" class="w-full bg-purple-50 text-purple-700 font-bold py-3 rounded-xl text-sm border border-purple-100 hover:bg-purple-100">
+                    👤 Parťák Radim
+                </button>
+                <button onclick="debugLogin('Delnik')" class="w-full bg-blue-50 text-blue-700 font-bold py-3 rounded-xl text-sm border border-blue-100 hover:bg-blue-100">
+                    👷 Dělník Franta
                 </button>
             </div>
 
             <p id="login-error" class="mt-6 text-red-500 text-sm font-bold bg-red-50 px-4 py-2 rounded-lg hidden text-center"></p>
         </div>
 
-        <!-- 2. HLAVNÍ DASHBOARD (SIMPLE) -->
+        <!-- 2. HLAVNÍ DASHBOARD (ČTVERCE) -->
         <div id="screen-dashboard" class="hidden flex-col h-full bg-gray-50">
             <!-- Hlavička -->
             <div class="bg-white px-6 py-4 shadow-sm z-10 flex justify-between items-center border-b border-gray-100">
                 <div>
                     <h2 class="font-bold text-gray-900 text-lg leading-tight" id="user-name">Načítám...</h2>
-                    <p class="text-xs text-gray-400 font-medium uppercase tracking-wide" id="user-role">Dělník</p>
+                    <!-- Role bude buď prázdná, nebo PARŤÁK -->
+                    <p class="text-xs text-yellow-600 font-bold uppercase tracking-wide mt-1" id="user-role"></p>
                 </div>
                 <button onclick="logout()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors">
                     <i class="fa-solid fa-power-off"></i>
@@ -77,24 +81,27 @@
                     </div>
                 </div>
 
-                <!-- TLAČÍTKA AKCÍ (Obrovská) -->
-                <div class="flex-1 grid grid-rows-2 gap-4 min-h-[300px]">
-                    <button onclick="openStavbyModal('Příchod')" class="relative overflow-hidden group bg-green-500 hover:bg-green-600 active:scale-[0.98] transition-all rounded-3xl shadow-lg shadow-green-200 text-white flex flex-col items-center justify-center gap-2">
+                <!-- TLAČÍTKA AKCÍ (GRID) -->
+                <!-- aspect-square zajistí čtvercový tvar -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="openStavbyModal('Příchod')" class="aspect-square relative overflow-hidden group bg-green-500 hover:bg-green-600 active:scale-[0.98] transition-all rounded-3xl shadow-lg shadow-green-200 text-white flex flex-col items-center justify-center gap-1 p-2">
                         <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                        <i class="fa-solid fa-circle-play text-5xl mb-2"></i>
-                        <span class="text-2xl font-black tracking-tight">PŘÍCHOD</span>
-                        <span class="text-green-100 text-sm font-medium">Jsem na stavbě</span>
+                        <i class="fa-solid fa-circle-play text-4xl mb-1"></i>
+                        <span class="text-xl font-black tracking-tight">PŘÍCHOD</span>
+                        <span class="text-green-100 text-xs font-medium text-center leading-tight">Začínám makat</span>
                     </button>
 
-                    <button onclick="openStavbyModal('Odchod')" class="relative overflow-hidden group bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-3xl shadow-lg shadow-red-200 text-white flex flex-col items-center justify-center gap-2">
+                    <button onclick="openStavbyModal('Odchod')" class="aspect-square relative overflow-hidden group bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-3xl shadow-lg shadow-red-200 text-white flex flex-col items-center justify-center gap-1 p-2">
                         <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                        <i class="fa-solid fa-circle-stop text-5xl mb-2"></i>
-                        <span class="text-2xl font-black tracking-tight">ODCHOD</span>
-                        <span class="text-red-100 text-sm font-medium">Jdu ze stavby</span>
+                        <i class="fa-solid fa-circle-stop text-4xl mb-1"></i>
+                        <span class="text-xl font-black tracking-tight">ODCHOD</span>
+                        <span class="text-red-100 text-xs font-medium text-center leading-tight">Jdu domů</span>
                     </button>
                 </div>
                 
-                <p class="text-center text-xs text-gray-300 font-medium">Šnekostav Simple v1.0</p>
+                <div class="mt-auto pt-6">
+                    <p class="text-center text-xs text-gray-300 font-medium">Šnekostav Simple v1.1</p>
+                </div>
             </div>
         </div>
 
