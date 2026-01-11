@@ -7,7 +7,7 @@ if ('serviceWorker' in navigator) {
 
 // ==========================================
 // 🛠️ NASTAVENÍ (DEBUG)
-const DEBUG_MODE = true; 
+const DEBUG_MODE = false; 
 // ==========================================
 
 const firebaseConfig = {
