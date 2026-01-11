@@ -1,18 +1,15 @@
-// --- REGISTRACE SERVICE WORKERU (PWA) ---
+// --- REGISTRACE SERVICE WORKERU ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('SW registrován:', reg.scope))
-            .catch(err => console.log('SW chyba:', err));
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW chyba:', err));
     });
 }
 
 // ==========================================
-// 🛠️ NASTAVENÍ PRO LOKÁLNÍ VÝVOJ
+// 🛠️ NASTAVENÍ (DEBUG)
 const DEBUG_MODE = true; 
 // ==========================================
 
-// --- 1. KONFIGURACE ---
 const firebaseConfig = {
     apiKey: "AIzaSyBVr6ktDX_NSD0Jgp3KlbMQV-EeYsD5ZqQ", 
     authDomain: "snekostav-digital-service.firebaseapp.com",
@@ -22,235 +19,212 @@ const firebaseConfig = {
     appId: "1:861601501524:web:cf3f9a6dac9b0602d178c1"
 };
 
-// Pokud nejsme v debug módu, nastartujeme Firebase
-if (!DEBUG_MODE) {
-    firebase.initializeApp(firebaseConfig);
-}
+if (!DEBUG_MODE) firebase.initializeApp(firebaseConfig);
 
 // --- STAV APLIKACE ---
-let currentUserDoc = null; 
-let currentAction = "";    
-let actingForId = null;    
-let actingForFullName = null; 
-let currentGps = null;     
+let currentUser = null;     
+let currentAction = "";     
+let currentGps = null;
 
 // --- INIT ---
 window.onload = function() {
     if (DEBUG_MODE) {
-        console.log("⚠️ Aplikace běží v DEBUG módu.");
         document.getElementById('debug-indicator').classList.remove('hidden');
         document.getElementById('debug-login-btns').classList.remove('hidden');
     } else {
         const auth = firebase.auth();
         const db = firebase.firestore();
-        db.enablePersistence().catch(err => console.log("Persistence error", err));
+        db.enablePersistence().catch(err => console.log("Persistence err", err));
         
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                loadUserFromFirebase(user.email);
-            } else {
-                showLoginScreen();
-            }
+        auth.onAuthStateChanged(user => {
+            if (user) loadUserFromFirebase(user.email);
+            else showLoginScreen();
         });
     }
 };
 
-// --- FUNKCE ---
-
+// --- AUTH ---
 async function loadUserFromFirebase(email) {
-    const db = firebase.firestore();
     try {
-        const snapshot = await db.collection('users').where('email', '==', email).get();
-        if (snapshot.empty) { showLoginError("Neznámý uživatel."); firebase.auth().signOut(); return; }
+        const db = firebase.firestore();
+        const snap = await db.collection('users').where('email', '==', email).get();
+        if (snap.empty) { alert("Neznámý uživatel"); firebase.auth().signOut(); return; }
         
-        currentUserDoc = snapshot.docs[0].data();
-        if (currentUserDoc.aktivni === false) { showLoginError("Deaktivovaný účet."); firebase.auth().signOut(); return; }
+        currentUser = snap.docs[0].data();
+        if (!currentUser.aktivni) { alert("Účet deaktivován"); firebase.auth().signOut(); return; }
 
-        initializeDashboard();
-    } catch (err) { console.error(err); showLoginError("Chyba DB: " + err.message); }
+        showDashboard();
+    } catch (e) { console.error(e); }
 }
 
-function debugLogin(type) {
-    if (type === 'Partak') {
-        currentUserDoc = {
-            id: "D01", jmeno: "Radim", prijmeni: "Pejcha", email: "debug@radim.cz", role: "Parťák", aktivni: true,
-            pomocnici: "D02, D03, D04" 
-        };
-    } else {
-        currentUserDoc = {
-            id: "D02", jmeno: "Franta", prijmeni: "Jetel", email: "franta@test.cz", role: "Dělník", aktivni: true, pomocnici: ""
-        };
-    }
-    initializeDashboard();
+function debugLogin() {
+    currentUser = { id: "D02", jmeno: "Franta", prijmeni: "Jetel", email: "franta@test.cz", role: "Dělník", aktivni: true };
+    showDashboard();
 }
 
-function initializeDashboard() {
+function showDashboard() {
     document.getElementById('screen-login').classList.add('hidden');
     document.getElementById('screen-dashboard').classList.remove('hidden');
     document.getElementById('screen-dashboard').classList.add('flex');
     
-    document.getElementById('user-name').innerText = currentUserDoc.jmeno + " " + currentUserDoc.prijmeni;
-    document.getElementById('user-role').innerText = currentUserDoc.role;
-
+    document.getElementById('user-name').innerText = currentUser.jmeno + " " + currentUser.prijmeni;
+    document.getElementById('user-role').innerText = currentUser.role || "Dělník";
+    
     watchLocation();
-
-    if (currentUserDoc.role === 'Parťák' && currentUserDoc.pomocnici) {
-        loadHelpers(currentUserDoc.pomocnici);
-    }
 }
 
-function loginWithGoogle() {
-    if (DEBUG_MODE) { alert("V debug módu použij barevná tlačítka níže."); return; }
-    const provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider).catch(err => showLoginError(err.message));
-}
-
-function logout() { 
-    if (DEBUG_MODE) { showLoginScreen(); } else { firebase.auth().signOut(); }
-}
-
-function showLoginScreen() {
-    document.getElementById('screen-dashboard').classList.add('hidden');
-    document.getElementById('screen-dashboard').classList.remove('flex');
-    document.getElementById('screen-login').classList.remove('hidden');
-    currentUserDoc = null;
-}
-
-function showLoginError(msg) { const el = document.getElementById('login-error'); el.innerText = msg; el.classList.remove('hidden'); }
-
-// --- PARŤÁK & POMOCNÍCI ---
-async function loadHelpers(csvIds) {
-    const ids = csvIds.split(',').map(s => s.trim()).filter(s => s !== "");
-    if (ids.length === 0) return;
-
-    const container = document.getElementById('helpers-list');
-    container.innerHTML = '<span class="text-xs text-gray-400">Načítám...</span>';
-
-    renderHelperBtn(currentUserDoc.id, "JÁ (Sám za sebe)", currentUserDoc.jmeno + " " + currentUserDoc.prijmeni, true);
-
-    let helpersData = [];
-    if (DEBUG_MODE) {
-        helpersData = [
-            { id: "D02", jmeno: "Franta", prijmeni: "Jetel" },
-            { id: "D03", jmeno: "Lojza", prijmeni: "Lívanec" },
-            { id: "D04", jmeno: "Jindra", prijmeni: "Kloboučník" }
-        ];
-        helpersData = helpersData.filter(h => ids.includes(h.id));
-    } else {
-        const allUsersSnap = await firebase.firestore().collection('users').where('aktivni', '==', true).get();
-        allUsersSnap.forEach(doc => {
-            const d = doc.data();
-            if (ids.includes(d.id)) helpersData.push(d);
-        });
-    }
-    
-    container.innerHTML = '';
-    renderHelperBtn(currentUserDoc.id, "JÁ (Sám za sebe)", currentUserDoc.jmeno + " " + currentUserDoc.prijmeni, true);
-
-    helpersData.forEach(d => {
-        renderHelperBtn(d.id, d.jmeno + " " + d.prijmeni.charAt(0) + ".", d.jmeno + " " + d.prijmeni);
-    });
-    
-    document.getElementById('partak-panel').classList.remove('hidden');
-}
-
-function renderHelperBtn(id, label, fullName, isMe = false) {
-    const btn = document.createElement('button');
-    btn.className = `shrink-0 px-4 py-2 rounded-lg text-sm font-bold shadow-sm whitespace-nowrap transition-colors border ${isMe ? 'bg-yellow-200 border-yellow-400 text-yellow-900 ring-2 ring-yellow-400 ring-offset-1' : 'bg-white border-yellow-200 text-gray-700 hover:bg-yellow-50'}`;
-    btn.innerText = label;
-    btn.onclick = () => {
-        document.querySelectorAll('#helpers-list button').forEach(b => {
-            b.classList.remove('ring-2', 'ring-yellow-400', 'ring-offset-1', 'bg-yellow-200');
-            b.classList.add('bg-white');
-        });
-        btn.classList.remove('bg-white');
-        btn.classList.add('bg-yellow-200', 'ring-2', 'ring-yellow-400', 'ring-offset-1');
-        actingForId = id;
-        actingForFullName = fullName;
-    };
-    document.getElementById('helpers-list').appendChild(btn);
-    if (isMe) { actingForId = id; actingForFullName = fullName; }
-}
-
-// --- GPS & MODAL ---
+// --- GPS LOGIKA ---
 function watchLocation() {
     if (DEBUG_MODE) {
+        // Simulace: Jsem trochu mimo stavbu S01 (vzdálenost 250m)
         setTimeout(() => {
-            currentGps = { lat: 50.0755, lon: 14.4378 }; 
+            currentGps = { lat: 50.077, lon: 14.4378 }; 
             document.getElementById('gps-status').innerText = `DEBUG Poloha (Praha)`;
         }, 1000);
         return;
     }
     if (!navigator.geolocation) { document.getElementById('gps-status').innerText = "Bez GPS"; return; }
     navigator.geolocation.watchPosition(
-        (pos) => { currentGps = { lat: pos.coords.latitude, lon: pos.coords.longitude }; document.getElementById('gps-status').innerText = `Poloha OK (±${Math.round(pos.coords.accuracy)}m)`; },
-        (err) => { document.getElementById('gps-status').innerText = "Chyba GPS"; }, { enableHighAccuracy: true }
+        pos => { 
+            currentGps = { lat: pos.coords.latitude, lon: pos.coords.longitude }; 
+            document.getElementById('gps-status').innerText = `Poloha OK (±${Math.round(pos.coords.accuracy)}m)`;
+        },
+        err => document.getElementById('gps-status').innerText = "Chyba GPS"
     );
 }
 
+// --- VÝBĚR STAVBY ---
 async function openStavbyModal(action) {
-    if (!currentGps) { alert("Čekám na GPS..."); return; }
+    if (!currentGps && !DEBUG_MODE) { alert("Čekám na GPS... Jdi ven."); return; }
+    
     currentAction = action;
     document.getElementById('modal-stavby').classList.remove('hidden');
-    const list = document.getElementById('stavby-list');
-    list.innerHTML = "Načítám...";
+    document.getElementById('modal-title').innerText = action;
     
-    let stavbyArray = [];
+    const list = document.getElementById('stavby-list');
+    list.innerHTML = '<div class="text-center p-4 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin text-2xl"></i><br>Hledám stavby v okolí...</div>';
+
+    let stavby = [];
     if (DEBUG_MODE) {
-        stavbyArray = [
-            { id: "S01", nazev: "Rezidence Park", lat: 50.0755, lon: 14.4378, radius: 200, dist: 50 },
-            { id: "S02", nazev: "Vila Hradec", lat: 50.1, lon: 14.5, radius: 100, dist: 5000 }
+        stavby = [
+            { id: "S01", nazev: "Vila Park", lat: 50.0755, lon: 14.4378, radius: 200 },
+            { id: "S02", nazev: "Sklad", lat: 50.1, lon: 14.5, radius: 200 }
         ];
     } else {
-        const snap = await firebase.firestore().collection('stavby').where('stav', '==', 'Aktivní').get();
-        snap.forEach(doc => {
-            const s = doc.data();
-            const dist = getDistanceFromLatLonInKm(currentGps.lat, currentGps.lon, s.lat, s.lon) * 1000;
-            stavbyArray.push({ ...s, dist: dist });
-        });
-        stavbyArray.sort((a, b) => a.dist - b.dist);
+        const db = firebase.firestore();
+        const snap = await db.collection('stavby').where('stav', '==', 'Aktivní').get();
+        snap.forEach(doc => { stavby.push(doc.data()); });
     }
 
-    list.innerHTML = "";
-    stavbyArray.forEach(s => {
-        const isClose = s.dist <= s.radius;
-        const item = document.createElement('button');
-        item.className = "w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 flex items-center gap-3";
-        item.innerHTML = `<div class="w-3 h-3 rounded-full ${isClose ? 'bg-green-500' : 'bg-gray-300'}"></div><div><div class="font-bold text-gray-800">${s.nazev}</div><div class="text-xs text-gray-500">${Math.round(s.dist)}m</div></div>`;
-        item.onclick = () => odeslatDochazku(s);
-        list.appendChild(item);
+    // Vypočítat vzdálenosti
+    stavby = stavby.map(s => {
+        const dist = getDistanceFromLatLonInKm(currentGps.lat, currentGps.lon, s.lat, s.lon) * 1000;
+        return { ...s, dist: Math.round(dist) };
     });
+
+    // Seřadit podle vzdálenosti
+    stavby.sort((a, b) => a.dist - b.dist);
+
+    renderStavbyList(stavby);
 }
 
-function closeModal() { document.getElementById('modal-stavby').classList.add('hidden'); }
+function renderStavbyList(stavby) {
+    const list = document.getElementById('stavby-list');
+    list.innerHTML = "";
 
-async function odeslatDochazku(stavba) {
-    if (!actingForId) actingForId = currentUserDoc.id;
+    // Rozdělení na "V dosahu" a "Mimo dosah"
+    const near = stavby.filter(s => s.dist <= s.radius);
+    const far = stavby.filter(s => s.dist > s.radius);
+
+    if (near.length > 0) {
+        const label = document.createElement('p');
+        label.className = "text-xs font-bold text-green-600 uppercase mb-2 mt-2 px-2";
+        label.innerText = "Stavby v dosahu (Zde jsi)";
+        list.appendChild(label);
+
+        near.forEach(s => list.appendChild(createStavbaBtn(s, true)));
+    }
+
+    if (far.length > 0) {
+        const label = document.createElement('p');
+        label.className = "text-xs font-bold text-gray-400 uppercase mb-2 mt-4 px-2";
+        label.innerText = "Ostatní stavby (Mimo dosah)";
+        list.appendChild(label);
+
+        far.forEach(s => list.appendChild(createStavbaBtn(s, false)));
+    }
+}
+
+function createStavbaBtn(s, isNear) {
+    const btn = document.createElement('div');
+    btn.className = `w-full p-4 mb-2 border rounded-xl flex items-center gap-4 cursor-pointer transition-all ${isNear ? 'bg-white border-green-200 hover:border-green-400 shadow-sm' : 'bg-gray-100 border-gray-200 opacity-70 hover:opacity-100'}`;
+    
+    btn.innerHTML = `
+        <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isNear ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-400'}">
+            <i class="fa-solid ${isNear ? 'fa-location-dot' : 'fa-ban'}"></i>
+        </div>
+        <div class="flex-1">
+            <h4 class="font-bold text-gray-800">${s.nazev}</h4>
+            <p class="text-xs ${isNear ? 'text-green-600 font-bold' : 'text-red-500'}">
+                ${s.dist}m od tebe ${isNear ? '' : '(Jsi daleko!)'}
+            </p>
+        </div>
+        <i class="fa-solid fa-chevron-right text-gray-300"></i>
+    `;
+
+    btn.onclick = () => confirmAndSend(s, isNear);
+    return btn;
+}
+
+// --- ODESLÁNÍ ---
+function confirmAndSend(stavba, isNear) {
+    // PSYCHOLOGICKÁ BRZDA PRO "OČŮRÁVAČE"
+    if (!isNear) {
+        const msg = `⚠️ VAROVÁNÍ: Jste příliš daleko od stavby "${stavba.nazev}"!\n\nVzdálenost: ${stavba.dist}m\n\nTato akce bude zaznamenána jako "Mimo stavbu" - k prověření.\n\nPokračovat?`;
+        if (!confirm(msg)) return; // Uživatel se lekl a zrušil to
+    }
+
+    sendToFirebase(stavba, isNear);
+}
+
+async function sendToFirebase(stavba, isNear) {
     if (DEBUG_MODE) {
-        alert(`DEBUG: Odesláno pro ${actingForFullName}`);
+        alert(`DEBUG: Odesláno!\n${currentAction} -> ${stavba.nazev}\nStatus: ${isNear ? 'OK' : 'Mimo stavbu'}`);
         closeModal();
         return;
     }
+
     const zaznam = {
         timestamp: new Date().toISOString(),
-        id_delnika: actingForId,
-        jmeno_delnika: actingForFullName || (currentUserDoc.jmeno + " " + currentUserDoc.prijmeni),
-        jmeno_autora: currentUserDoc.jmeno + " " + currentUserDoc.prijmeni,
-        email_autora: currentUserDoc.email,
+        id_delnika: currentUser.id,
+        jmeno_delnika: currentUser.jmeno + " " + currentUser.prijmeni,
+        jmeno_autora: currentUser.jmeno + " " + currentUser.prijmeni,
+        email_autora: currentUser.email,
         id_stavby: stavba.id,
         nazev_stavby: stavba.nazev,
         akce: currentAction,
         gps_lat: currentGps.lat,
         gps_lon: currentGps.lon,
-        vzdalenost: Math.round(stavba.dist),
-        status: stavba.dist <= stavba.radius ? "OK" : "Mimo stavbu"
+        vzdalenost: stavba.dist,
+        status: isNear ? "OK" : "Mimo stavbu - VAROVÁNÍ" // Tady to "práskneme" do tabulky
     };
+
     try {
         await firebase.firestore().collection('dochazka').add(zaznam);
         closeModal();
-        alert(`✅ ${currentAction} zapsán pro: ${actingForFullName}`);
-    } catch (e) { alert("Chyba: " + e.message); }
+        alert(`✅ ${currentAction} úspěšně zapsán.`);
+    } catch (e) {
+        alert("Chyba při zápisu: " + e.message);
+    }
 }
+
+// --- POMOCNÉ ---
+function closeModal() { document.getElementById('modal-stavby').classList.add('hidden'); }
+function loginWithGoogle() { 
+    if (DEBUG_MODE) alert("Debug mode"); 
+    else firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+}
+function logout() { firebase.auth().signOut(); window.location.reload(); }
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
     var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 

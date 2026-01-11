@@ -15,83 +15,110 @@
 </head>
 <body>
 
-    <!-- OBSAH APLIKACE -->
-    <div class="app-container relative">
+    <div class="app-container relative flex flex-col h-screen">
         
-        <!-- Indikátor vývojářského režimu -->
+        <!-- DEBUG PROUŽEK -->
         <div id="debug-indicator" class="hidden debug-strip">LOKÁLNÍ VÝVOJÁŘSKÝ REŽIM (DATA SE NEUKLÁDAJÍ)</div>
 
-        <!-- 1. LOGIN SCREEN -->
-        <div id="screen-login" class="flex flex-col justify-center items-center h-screen p-6">
-            <div class="mb-8 text-center">
-                <div class="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <i class="fa-solid fa-helmet-safety text-4xl text-white"></i>
+        <!-- 1. OBRAZOVKA PŘIHLÁŠENÍ -->
+        <div id="screen-login" class="flex-1 flex flex-col justify-center items-center p-6 bg-white">
+            <div class="mb-10 text-center">
+                <div class="w-24 h-24 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl ring-4 ring-yellow-100">
+                    <i class="fa-solid fa-helmet-safety text-5xl text-white"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800">Šnekostav</h1>
-                <p class="text-gray-500 text-sm">Evidence docházky</p>
+                <h1 class="text-3xl font-black text-gray-800 tracking-tight">Šnekostav</h1>
+                <p class="text-gray-500 mt-2 font-medium">Evidence docházky</p>
             </div>
             
-            <button onclick="loginWithGoogle()" class="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-sm btn-active flex items-center justify-center gap-3 mb-4">
-                <i class="fa-brands fa-google text-red-500"></i> Přihlásit se přes Google
+            <button onclick="loginWithGoogle()" class="w-full max-w-xs bg-white border-2 border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm hover:bg-gray-50 active:scale-95 transition-transform flex items-center justify-center gap-3">
+                <i class="fa-brands fa-google text-red-500 text-xl"></i> 
+                <span>Přihlásit se přes Google</span>
             </button>
 
-            <!-- DEBUG tlačítka -->
-            <div id="debug-login-btns" class="hidden w-full space-y-2 border-t border-gray-200 pt-4">
-                <p class="text-xs text-gray-400 text-center uppercase mb-2">Rychlé testování (Bez hesla)</p>
-                <button onclick="debugLogin('Partak')" class="w-full bg-purple-100 text-purple-800 font-bold py-2 rounded-lg text-sm hover:bg-purple-200">
-                    👤 Test: Parťák Radim
-                </button>
-                <button onclick="debugLogin('Delnik')" class="w-full bg-blue-100 text-blue-800 font-bold py-2 rounded-lg text-sm hover:bg-blue-200">
+            <!-- DEBUG TLAČÍTKA -->
+            <div id="debug-login-btns" class="hidden mt-8 w-full max-w-xs space-y-3">
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-gray-300 text-xs uppercase font-bold">Debug</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+                <button onclick="debugLogin()" class="w-full bg-blue-50 text-blue-700 font-bold py-3 rounded-xl text-sm border border-blue-100 hover:bg-blue-100">
                     👷 Test: Dělník Franta
                 </button>
             </div>
 
-            <p id="login-error" class="mt-4 text-red-500 text-xs hidden"></p>
+            <p id="login-error" class="mt-6 text-red-500 text-sm font-bold bg-red-50 px-4 py-2 rounded-lg hidden text-center"></p>
         </div>
 
-        <!-- 2. DASHBOARD -->
-        <div id="screen-dashboard" class="hidden flex-col h-full">
-            <div class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
+        <!-- 2. HLAVNÍ DASHBOARD (SIMPLE) -->
+        <div id="screen-dashboard" class="hidden flex-col h-full bg-gray-50">
+            <!-- Hlavička -->
+            <div class="bg-white px-6 py-4 shadow-sm z-10 flex justify-between items-center border-b border-gray-100">
                 <div>
-                    <h2 class="font-bold text-lg" id="user-name">Načítám...</h2>
-                    <p class="text-xs text-gray-400" id="user-role">...</p>
+                    <h2 class="font-bold text-gray-900 text-lg leading-tight" id="user-name">Načítám...</h2>
+                    <p class="text-xs text-gray-400 font-medium uppercase tracking-wide" id="user-role">Dělník</p>
                 </div>
-                <button onclick="logout()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-right-from-bracket"></i></button>
+                <button onclick="logout()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
             </div>
 
-            <div class="flex-1 p-4 bg-gray-50 overflow-y-auto">
-                <div id="gps-box" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-sm text-blue-800 flex items-center gap-2">
-                    <i class="fa-solid fa-location-arrow animate-pulse"></i> <span id="gps-status">Zjišťuji polohu...</span>
+            <!-- Obsah: GPS + Velká Tlačítka -->
+            <div class="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
+                
+                <!-- GPS Stav -->
+                <div id="gps-box" class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0 animate-pulse">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 font-bold uppercase">Tvoje poloha</p>
+                        <p class="text-sm font-bold text-gray-800 truncate" id="gps-status">Hledám satelity...</p>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <button onclick="openStavbyModal('Příchod')" class="btn-active bg-green-500 hover:bg-green-600 text-white rounded-xl p-6 shadow-lg flex flex-col items-center">
-                        <i class="fa-solid fa-play text-3xl mb-2"></i>
-                        <span class="font-bold">ZAČÍT</span>
+                <!-- TLAČÍTKA AKCÍ (Obrovská) -->
+                <div class="flex-1 grid grid-rows-2 gap-4 min-h-[300px]">
+                    <button onclick="openStavbyModal('Příchod')" class="relative overflow-hidden group bg-green-500 hover:bg-green-600 active:scale-[0.98] transition-all rounded-3xl shadow-lg shadow-green-200 text-white flex flex-col items-center justify-center gap-2">
+                        <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                        <i class="fa-solid fa-circle-play text-5xl mb-2"></i>
+                        <span class="text-2xl font-black tracking-tight">PŘÍCHOD</span>
+                        <span class="text-green-100 text-sm font-medium">Jsem na stavbě</span>
                     </button>
-                    <button onclick="openStavbyModal('Odchod')" class="btn-active bg-red-500 hover:bg-red-600 text-white rounded-xl p-6 shadow-lg flex flex-col items-center">
-                        <i class="fa-solid fa-stop text-3xl mb-2"></i>
-                        <span class="font-bold">KONČIT</span>
+
+                    <button onclick="openStavbyModal('Odchod')" class="relative overflow-hidden group bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-3xl shadow-lg shadow-red-200 text-white flex flex-col items-center justify-center gap-2">
+                        <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                        <i class="fa-solid fa-circle-stop text-5xl mb-2"></i>
+                        <span class="text-2xl font-black tracking-tight">ODCHOD</span>
+                        <span class="text-red-100 text-sm font-medium">Jdu ze stavby</span>
+                    </button>
+                </div>
+                
+                <p class="text-center text-xs text-gray-300 font-medium">Šnekostav Simple v1.0</p>
+            </div>
+        </div>
+
+        <!-- 3. MODAL (Výběr stavby) -->
+        <div id="modal-stavby" class="hidden fixed inset-0 z-50 flex flex-col bg-gray-900/90 backdrop-blur-sm transition-opacity duration-300">
+            <div class="mt-auto sm:my-auto bg-white w-full sm:max-w-md sm:mx-auto rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh]">
+                
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-3xl">
+                    <div>
+                        <h3 class="text-xl font-black text-gray-800" id="modal-title">...</h3>
+                        <p class="text-sm text-gray-500">Vyber stavbu dle GPS</p>
+                    </div>
+                    <button onclick="closeModal()" class="w-10 h-10 bg-white rounded-full text-gray-400 hover:text-gray-800 shadow-sm flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
 
-                <div id="partak-panel" class="hidden bg-yellow-50 border border-yellow-100 rounded-xl p-4 mb-6">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Moje parta (Pomocníci)</h3>
-                    <div id="helpers-list" class="flex gap-2 overflow-x-auto pb-2"></div>
+                <div id="stavby-list" class="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50">
+                    <!-- Zde se načtou stavby -->
+                    Loading...
                 </div>
             </div>
         </div>
 
-        <!-- 3. MODAL -->
-        <div id="modal-stavby" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col justify-end sm:justify-center">
-            <div class="bg-white w-full sm:max-w-md mx-auto rounded-t-2xl sm:rounded-2xl max-h-[80vh] flex flex-col">
-                <div class="p-4 border-b flex justify-between items-center">
-                    <h3 class="font-bold text-lg">Vyber stavbu</h3>
-                    <button onclick="closeModal()" class="w-8 h-8 bg-gray-100 rounded-full"><i class="fa-solid fa-times"></i></button>
-                </div>
-                <div id="stavby-list" class="p-2 overflow-y-auto">Loading...</div>
-            </div>
-        </div>
     </div>
 
     <!-- FIREBASE SDK -->
