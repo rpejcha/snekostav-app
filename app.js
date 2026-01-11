@@ -12,7 +12,7 @@ const DEBUG_MODE = false;
 
 const firebaseConfig = {
     apiKey: "AIzaSyBVr6ktDX_NSD0Jgp3KlbMQV-EeYsD5ZqQ", 
-    authDomain: "snekostav-digital-service.firebaseapp.com",
+    authDomain: "snekostav-system.firebaseapp.com",
     projectId: "snekostav-system",
     storageBucket: "snekostav-system.appspot.com",
     messagingSenderId: "861601501524",
