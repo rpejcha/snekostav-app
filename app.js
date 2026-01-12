@@ -59,7 +59,7 @@ async function loadUserFromFirebase(email) {
 
 function debugLogin(type) {
     if (type === 'Partak') {
-        currentUser = { id: "D01", jmeno: "Radim", prijmeni: "Pejcha", email: "debug@radim.cz", role: "Parťák", aktivni: true };
+        currentUser = { id: "D01", jmeno: "Lojza", prijmeni: "Lívanec", email: "debug@radim.cz", role: "Parťák", aktivni: true };
     } else {
         currentUser = { id: "D02", jmeno: "Franta", prijmeni: "Jetel", email: "franta@test.cz", role: "Dělník", aktivni: true };
     }

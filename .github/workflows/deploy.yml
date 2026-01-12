@@ -1,0 +1,38 @@
+name: Deploy to WEDOS FTP
+
+on:
+  push:
+    branches:
+      - main  # Pokud se tvá hlavní větev jmenuje 'master', přepiš to na 'master'
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        
+        # DŮLEŽITÉ NASTAVENÍ CESTY:
+        # Pokud jsi vytvořil FTP uživatele, který vidí JEN složku 'subdoms/dochazka',
+        # nechej server-dir nastavený na './'.
+        # Pokud používáš hlavní účet, napiš sem cestu: './www/subdoms/dochazka/'
+        server-dir: ./
+        
+        # Co na server NENAHRÁVAT (balast)
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          README.md
+          package.json
+          package-lock.json
+          .gitignore
+          .github/**
